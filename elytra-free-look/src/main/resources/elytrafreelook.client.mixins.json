@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "dev.pocketotter.elytrafreelook.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": [
+    "EntityTurnMixin",
+    "LocalPlayerMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

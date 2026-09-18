@@ -1,0 +1,89 @@
+plugins {
+	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'maven-publish'
+}
+
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
+
+repositories {
+	// Loom already adds the repositories needed to download Minecraft and
+	// Fabric's own artifacts. These two are for third-party mods, and both
+	// use the creator's own maven rather than the generic Modrinth maven
+	// proxy — the maintainers of both explicitly recommend this, since the
+	// creator's own maven carries transitive dependency info the Modrinth
+	// proxy doesn't.
+	maven {
+		name = "Xander Maven" // YetAnotherConfigLib (YACL)
+		url = "https://maven.isxander.dev/releases"
+	}
+	maven {
+		name = "Terraformers" // Mod Menu
+		url = "https://maven.terraformersmc.com/"
+	}
+}
+
+dependencies {
+	// Minecraft 26.2 ships fully unobfuscated (real Mojang names baked in),
+	// so unlike pre-26.1 setups there is no separate "mappings" artifact to
+	// declare here — Loom just uses the names Mojang shipped.
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+
+	// Since everything is unobfuscated now, dependencies no longer need the
+	// "mod" remapping variants (modImplementation/modCompileOnly) — plain
+	// implementation/compileOnly work directly.
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+
+	// Config screen. Hard dependency — the mod's whole config system is
+	// built on it, so it's declared as "depends" (required) in
+	// fabric.mod.json, not just compiled against.
+	implementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
+
+	// Optional integration: lets the config screen show up in the mods
+	// list. Declared plain "implementation" (not modCompileOnly) so it's
+	// also present for testing via runClient, but only "suggests" (soft
+	// dependency) in fabric.mod.json — the mod works fine without it.
+	implementation "com.terraformersmc:modmenu:${project.modmenu_version}"
+}
+
+processResources {
+	inputs.property "version", project.version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	// Ensure UTF-8 regardless of the host system's default encoding.
+	it.options.encoding = "UTF-8"
+	// Minecraft 26.2 requires Java 25 at minimum.
+	it.options.release = 25
+}
+
+java {
+	// Generates a -sources.jar alongside the mod jar; safe to remove if unwanted.
+	withSourcesJar()
+
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+// Publishing is left as a stub for when/if you want to push builds to a
+// Maven repository. See:
+// https://docs.gradle.org/current/userguide/publishing_maven.html
+publishing {
+	publications {
+		create("mavenJava", MavenPublication) {
+			from components.java
+		}
+	}
+	repositories {
+		// Add repositories to publish to here.
+	}
+}
